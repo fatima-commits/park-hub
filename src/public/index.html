@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ParkHub</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <script src="/js/parking.js" defer></script>
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <h1>ParkHub</h1>
+        <p>Consulta espacios y crea una reservación.</p>
+      </header>
+
+      <section aria-labelledby="spots-title">
+        <div class="section-heading">
+          <h2 id="spots-title">Espacios</h2>
+          <button id="refresh-button" type="button">Actualizar disponibilidad</button>
+        </div>
+        <p id="spots-message" role="status"></p>
+        <div id="spots-list" class="cards"></div>
+      </section>
+
+      <section aria-labelledby="form-title">
+        <h2 id="form-title">Nueva reservación</h2>
+        <form id="reservation-form">
+          <label for="parking-spot">Espacio</label>
+          <select id="parking-spot" name="parkingSpotId" required></select>
+
+          <label for="start-time">Inicio</label>
+          <input id="start-time" name="startTime" type="datetime-local" required>
+
+          <label for="end-time">Fin</label>
+          <input id="end-time" name="endTime" type="datetime-local" required>
+
+          <button type="submit">Reservar</button>
+        </form>
+        <p id="reservation-message" role="status"></p>
+      </section>
+
+      <section aria-labelledby="reservations-title">
+        <h2 id="reservations-title">Reservaciones</h2>
+        <p id="reservations-message" role="status"></p>
+        <div id="reservations-list" class="cards"></div>
+      </section>
+    </main>
+  </body>
+</html>
