@@ -1,7 +1,5 @@
 # ParkHub
 
-This `park-hub-0.5-base` branch is the Session 17 teaching starter. The GET spots route, POST reservation route, and matching browser requests are intentionally incomplete. Complete the marked tasks during class; see [the live coding guide](docs/session-17-live-coding.md).
-
 ParkHub is a small parking reservation app for Session 17 of **Tecnologías de el servidor**. It demonstrates a browser calling a backend API with `fetch()` and a simple Route → Service → Model structure.
 
 ## Stack

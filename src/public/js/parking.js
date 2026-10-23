@@ -8,14 +8,13 @@ const reservationsMessage = document.querySelector('#reservations-message');
 
 function showLoading() {
   spotsList.replaceChildren();
-  spotsMessage.textContent = '';
-  // TODO S17 STUDENT 1:
-  // Mostrar "Cargando espacios..." antes de esperar la respuesta del Backend.
+  spotsMessage.textContent = 'Cargando espacios...';
 }
 
 function showError() {
   spotsList.replaceChildren();
   spotSelect.replaceChildren();
+  spotsMessage.textContent = 'No se pudieron cargar los espacios.';
   spotsMessage.className = 'error';
 }
 
@@ -23,9 +22,10 @@ function renderSpots(spots) {
   spotsList.replaceChildren();
   spotSelect.replaceChildren();
 
-  // TODO S17 STUDENT 2:
-  // Si la petición fue exitosa pero no hay espacios,
-  // mostrar "No hay espacios disponibles."
+  if (spots.length === 0) {
+    spotsMessage.textContent = 'No hay espacios disponibles.';
+    return;
+  }
 
   spotsMessage.textContent = '';
 
@@ -68,13 +68,10 @@ async function loadSpots() {
   spotsMessage.className = '';
 
   try {
-    let response;
-    // TODO S17 PROF 2:
-    // Solicitar los espacios al Backend usando fetch().
-
-    // TODO S17 STUDENT 3:
-    // Detectar una respuesta HTTP no exitosa
-    // y mostrar un mensaje de error al usuario.
+    const response = await fetch('/api/spots');
+    if (!response.ok) {
+      throw new Error('Could not load parking spots');
+    }
 
     const spots = await response.json();
     renderSpots(spots);
@@ -98,21 +95,21 @@ async function createReservation(event) {
   const endTime = formData.get('endTime');
 
   try {
-    const reservationData = {
-      parkingSpotId,
-      startTime: new Date(startTime).toISOString(),
-      endTime: new Date(endTime).toISOString()
-    };
-    let response;
+    const response = await fetch('/api/reservations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        parkingSpotId,
+        startTime: new Date(startTime).toISOString(),
+        endTime: new Date(endTime).toISOString()
+      })
+    });
 
-    // TODO S17 PROF 4:
-    // Enviar la reservación al Backend usando POST.
-    // Configurar method, Content-Type y body JSON.
-
-    // TODO S17 STUDENT 4:
-    // Si el Backend responde 409 Conflict,
-    // mostrar un mensaje específico al usuario.
-    // Para otros errores, mantener el mensaje genérico.
+    if (response.status === 409) {
+      reservationMessage.textContent = 'Ese espacio ya está reservado en ese horario.';
+      reservationMessage.className = 'error';
+      return;
+    }
 
     if (!response.ok) {
       throw new Error('Could not create reservation');
@@ -120,10 +117,8 @@ async function createReservation(event) {
 
     reservationMessage.textContent = 'Reservación creada correctamente.';
     reservationMessage.className = 'success';
-    // TODO S17 CHALLENGE:
-    // Después de una operación exitosa,
-    // actualizar espacios y reservaciones
-    // sin recargar manualmente el navegador.
+    await loadSpots();
+    await loadReservations();
   } catch (error) {
     console.error(error);
     reservationMessage.textContent = 'No fue posible crear la reservación.';
@@ -161,11 +156,23 @@ async function loadReservations() {
       card.append(title, period, status);
 
       if (reservation.status === 'ACTIVE') {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.textContent = 'Cancelar';
-        button.addEventListener('click', () => cancelReservation(reservation._id));
-        card.append(button);
+        const actionsContainer = document.createElement('div');
+        actionsContainer.className = 'actions';
+
+        const extendButton = document.createElement('button');
+        extendButton.type = 'button';
+        extendButton.textContent = 'Extender';
+        extendButton.addEventListener('click', () =>
+          extendReservation(reservation._id, reservation.endTime)
+        );
+
+        const cancelButton = document.createElement('button');
+        cancelButton.type = 'button';
+        cancelButton.textContent = 'Cancelar';
+        cancelButton.addEventListener('click', () => cancelReservation(reservation._id));
+
+        actionsContainer.append(extendButton, cancelButton);
+        card.append(actionsContainer);
       }
 
       reservationsList.append(card);
@@ -177,6 +184,47 @@ async function loadReservations() {
   }
 }
 
+async function extendReservation(id, currentEndTime) {
+  const currentEndFormatted = new Date(currentEndTime).toISOString().slice(0, 16);
+  const newEndTimeInput = prompt(
+    'Ingrese la nueva fecha y hora final (YYYY-MM-DDTHH:mm):',
+    currentEndFormatted
+  );
+
+  if (!newEndTimeInput) {
+    return; // Cancelado por el usuario
+  }
+
+  try {
+    const response = await fetch(`/api/reservations/${id}/extend`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        newEndTime: new Date(newEndTimeInput).toISOString()
+      })
+    });
+
+    const data = await response.json();
+
+    // Verificación de estados de error 4xx / 5xx
+    if (!response.ok) {
+      reservationsMessage.textContent = data.message || 'No se pudo extender la reservación.';
+      reservationsMessage.className = 'error';
+      return;
+    }
+
+    // Éxito HTTP 200
+    reservationsMessage.textContent = 'Reservación extendida correctamente.';
+    reservationsMessage.className = 'success';
+    await loadReservations();
+    await loadSpots();
+  } catch (error) {
+    console.error(error);
+    reservationsMessage.textContent = 'Error al procesar la solicitud de extensión.';
+    reservationsMessage.className = 'error';
+  }
+}
+
 async function cancelReservation(id) {
   try {
     const response = await fetch(`/api/reservations/${id}/cancel`, { method: 'PATCH' });
@@ -184,6 +232,8 @@ async function cancelReservation(id) {
       throw new Error('Could not cancel reservation');
     }
 
+    await loadReservations();
+    await loadSpots();
     reservationsMessage.textContent = 'Reservación cancelada correctamente.';
     reservationsMessage.className = 'success';
   } catch (error) {

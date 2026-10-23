@@ -25,3 +25,16 @@ export function hasTimeConflict(
 export function canReserveSpot(active: boolean, hasConflict: boolean) {
   return active && !hasConflict;
 }
+
+export function validateExtension(newEndTimeInput: unknown, currentEndTime: Date) {
+  if (typeof newEndTimeInput !== 'string') {
+    return null;
+  }
+
+  const newEnd = new Date(newEndTimeInput);
+  if (Number.isNaN(newEnd.getTime()) || newEnd <= currentEndTime) {
+    return null;
+  }
+
+  return newEnd;
+}

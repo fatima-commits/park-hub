@@ -5,10 +5,8 @@ const router = Router();
 
 router.get('/', async (_req, res) => {
   try {
-    // TODO S17 PROF 1:
-    // Obtener los espacios desde el Service
-    // y devolver la respuesta como JSON.
-    res.status(501).json({ message: 'Pendiente de implementar en clase' });
+    const spots = await parkingSpotService.getActiveSpots();
+    res.json(spots);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Could not load parking spots' });
